@@ -3,6 +3,8 @@
 This Scripts contains methods that help to scrap the Amazon Skill
 store page to count the number of skills.
 """
+import argparse
+import sys
 from re import match
 from time import sleep
 from selenium import webdriver
@@ -11,6 +13,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.firefox.options import Options
 
 
 AMAZON_BASE_URL = 'https://www.amazon.com'
@@ -27,56 +30,141 @@ SKILL_CAT_XPATH = '//ul[.{}]]{}'.format(
 RESULTS_XPATH = '//span[@id="s-result-count"]'
 RESULT_PATTERN = '.*[of|of over]? ([0-9][0-9,.]+) results.*'
 
+CONTROL_KEY = Keys.COMMAND if sys.platform == 'darwin' else Keys.CONTROL
 
-def scrap(skill_store_url=SKILL_STORE_URL):
-    """Scrap of the skill store page."""
+# when opening or closing a tab require the waiting time below to not trigger
+# errors such as https://stackoverflow.com/questions/27775759
+# /send-keys-control-click-in-selenium-with-python-bindings
+BROWSER_ACTION_WAIT_TIME = 3
+
+
+class ReportType(object):
+    """Defines the different types of report for the skill counting."""
+    FULL = 'full'
+    MINIMAL = 'minimal'
+
+
+class BrowserType(object):
+    """Defines the type of browser to use for the scrapping."""
+    HEADLESS = 'headless'
+    IN_WINDOW = 'in_window'
+
+
+def get_skill_cats_count(
+    skill_store_url=SKILL_STORE_URL,
+    browser_type=BrowserType.HEADLESS
+):
+    """Scrap of the skill store page and count the skill on the store.
+
+    :param skill_store_url: the homepage for the skill store on Amazon.
+    :param browser_type: the type of browser to use for the scrapping.
+    :return: A list with tuples, [(skill name, count)...].
+    """
+    if browser_type == BrowserType.HEADLESS:
+        options = Options()
+        options.set_headless()
+
     skills = list()
 
-    driver = webdriver.Firefox()
+    driver = webdriver.Firefox(options=options)
     driver.get(skill_store_url)
 
     driver_skill_cat_els = driver.find_elements(By.XPATH, SKILL_CAT_XPATH)
     for skill_cat_el in driver_skill_cat_els:
         skill_cat_name = skill_cat_el.text
-        skill_cat_cnt = '0'
-
-        # click on the skill category
-        skill_cat_el.send_keys(Keys.COMMAND + Keys.RETURN)
-        while len(driver.window_handles) < 2:
-            sleep(1)
-        driver.switch_to_window(driver.window_handles[-1])
-
-        try:
-            element_present = EC.presence_of_element_located(
-                (By.ID, 's-result-count')
-            )
-            WebDriverWait(driver, 10).until(element_present)
-        except TimeoutException:
-            break
-
-        driver_result_els = driver.find_elements(By.XPATH, RESULTS_XPATH)
-        if driver_result_els > 0:
-            result = driver_result_els[0]
-            match_results = match(RESULT_PATTERN, result.text)
-            if not match_results:
-                match_results = match('([0-9][0-9,.]*) result.*', result.text)
-            if match_results:
-                skill_cat_cnt = match_results.groups()[0]
 
         skills.append(
-            (skill_cat_name, int(skill_cat_cnt.replace(',', '')))
+            (skill_cat_name, get_no_skill_in_category(driver, skill_cat_el))
         )
 
         driver.close()
         while len(driver.window_handles) > 1:
-            sleep(1)
-        driver.switch_to_window(driver.window_handles[-1])
+            sleep(BROWSER_ACTION_WAIT_TIME)
+        driver.switch_to.window(driver.window_handles[-1])
 
     driver.quit()
     return skills
 
 
+def get_no_skill_in_category(driver, skill_cat_el):
+    """Search for the number of skill in the category.
+
+    :param driver: a selenium driver element.
+    :param skill_cat_el: a skill category element (link of a category on the
+    left column in the skill store home page).
+    :return: the category count.
+    """
+    skill_cat_cnt = 0
+
+    # click on the skill category
+    skill_cat_el.send_keys(CONTROL_KEY + Keys.RETURN)
+    while len(driver.window_handles) < 2:
+        sleep(BROWSER_ACTION_WAIT_TIME)
+    driver.switch_to.window(driver.window_handles[-1])
+
+    try:
+        element_present = EC.presence_of_element_located(
+            (By.ID, 's-result-count')
+        )
+        WebDriverWait(driver, 10).until(element_present)
+    except TimeoutException:
+        return 0
+
+    driver_result_els = driver.find_elements(By.XPATH, RESULTS_XPATH)
+    if len(driver_result_els) > 0:
+        result = driver_result_els[0]
+        match_results = match(RESULT_PATTERN, result.text)
+        if not match_results:
+            match_results = match('([0-9][0-9,.]*) result.*', result.text)
+        if match_results:
+            skill_cat_cnt = match_results.groups()[0]
+            skill_cat_cnt = int(skill_cat_cnt.replace(',', ''))
+
+    return skill_cat_cnt
+
+
+def run(setup_args):
+    """Performs the counting of the Alexa skill in the store
+
+    :param setup_args: all the arguments from the command line such as:
+    - report_type: the report type with a breakdown between categories.
+    - browser_type: the type of the browser to use.
+    """
+    skill_categories_count = get_skill_cats_count(
+        browser_type=setup_args.browser_type
+    )
+
+    if setup_args.report_type == ReportType.FULL:
+        for skill_cat_count in skill_categories_count:
+            print(skill_cat_count[0], ':\t', skill_cat_count[1])
+
+    total_skill_cnt = 0
+    for a_tuple in skill_categories_count:
+        total_skill_cnt += a_tuple[1]
+
+    print('Number of skills in the store:\t', total_skill_cnt)
+    pass
+
+
+def setup():
+    """Parse arguments for the script and return configuration in object.
+
+    :return: the arguments from the command line
+    """
+    cmd_args_parser = argparse.ArgumentParser()
+    cmd_args_parser.add_argument(
+        '--browser-type',
+        help='The type of browser: [headless, in_window]',
+        default=BrowserType.HEADLESS
+    )
+    cmd_args_parser.add_argument(
+        '--report-type',
+        help='Report breakdown by categories or the total: [full, minimal]',
+        default=ReportType.MINIMAL
+    )
+
+    return cmd_args_parser.parse_args()
+
+
 if __name__ == '__main__':
-    SKILLS_LIST = scrap()
-    SKILLS_LIST_TOTAL_CNT = reduce(lambda x, y: x + y[1], SKILLS_LIST, 0)
-    print SKILLS_LIST_TOTAL_CNT
+    run(setup_args=setup())
