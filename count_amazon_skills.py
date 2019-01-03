@@ -1,3 +1,4 @@
+# *--Encoding: utf-8 --*
 """Scrap the Amazon Skill Store page.
 
 This Scripts contains methods that help to scrap the Amazon Skill
@@ -5,8 +6,10 @@ store page to count the number of skills.
 """
 import argparse
 import sys
+
 from re import match
 from time import sleep
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -15,12 +18,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.firefox.options import Options
 
+from config import (SKILL_STORE_URL, BROWSER_ACTION_WAIT_TIME)
 
-AMAZON_BASE_URL = 'https://www.amazon.com'
-SKILL_STORE_URL = '{}{}'.format(
-    AMAZON_BASE_URL,
-    '/s/ref=lp_14284820011_hi_1?rh=n%3A13727921011&ie=UTF8&qid=1519567704'
-)
 ALEXA_SKILL_SEARCH_XPATH = '//h4[text()="Alexa Skills"'
 LINK_XPATH = '//a[contains(@class, "a-link-normal s-ref-text-link")]'
 SKILL_CAT_XPATH = '//ul[.{}]]{}'.format(
@@ -31,11 +30,6 @@ RESULTS_XPATH = '//span[@id="s-result-count"]'
 RESULT_PATTERN = '.*[of|of over]? ([0-9][0-9,.]+) results.*'
 
 CONTROL_KEY = Keys.COMMAND if sys.platform == 'darwin' else Keys.CONTROL
-
-# when opening or closing a tab require the waiting time below to not trigger
-# errors such as https://stackoverflow.com/questions/27775759
-# /send-keys-control-click-in-selenium-with-python-bindings
-BROWSER_ACTION_WAIT_TIME = 3
 
 
 class ReportType(object):
@@ -73,9 +67,8 @@ def get_skill_cats_count(
     for skill_cat_el in driver_skill_cat_els:
         skill_cat_name = skill_cat_el.text
 
-        skills.append(
-            (skill_cat_name, get_no_skill_in_category(driver, skill_cat_el))
-        )
+        number_of_skill = get_number_of_skill_in_category(driver, skill_cat_el)
+        skills.append((skill_cat_name, number_of_skill))
 
         driver.close()
         while len(driver.window_handles) > 1:
@@ -86,7 +79,7 @@ def get_skill_cats_count(
     return skills
 
 
-def get_no_skill_in_category(driver, skill_cat_el):
+def get_number_of_skill_in_category(driver, skill_cat_el):
     """Search for the number of skill in the category.
 
     :param driver: a selenium driver element.
@@ -117,8 +110,8 @@ def get_no_skill_in_category(driver, skill_cat_el):
         if not match_results:
             match_results = match('([0-9][0-9,.]*) result.*', result.text)
         if match_results:
-            skill_cat_cnt = match_results.groups()[0]
-            skill_cat_cnt = int(skill_cat_cnt.replace(',', ''))
+            skill_cat_cnt_str = match_results.groups()[0]
+            skill_cat_cnt = int(skill_cat_cnt_str.replace(',', ''))
 
     return skill_cat_cnt
 
