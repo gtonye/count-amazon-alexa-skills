@@ -34,12 +34,27 @@ pip install -r dev-requirements.txt
 ###### Local
 
 ```
-python count_amazon_skills.py
+make run
 ```
+
+Change the report by setting two environment variables:
+
+```
+BROWSER_TYPE=[headless, in_window]
+REPORT_TYPE=[full, minimal]
+```
+
+Use `in_window` if you want to see the scrapping in an actual window and `headless` for an invisible scrapping.
+A `full` report type print the breakdown of skill number by category. `minimal` only displays the total number of skill.
 
 ###### Using container
 
 ```make docker-run```
+
+You can also pass an environment file to script by doing:
+```
+make docker-run env-file="path-to-file"
+```
 
 ## Description
 
