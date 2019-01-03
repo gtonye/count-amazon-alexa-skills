@@ -65,10 +65,7 @@ def get_skill_cats_count(
 
     driver_skill_cat_els = driver.find_elements(By.XPATH, SKILL_CAT_XPATH)
     for skill_cat_el in driver_skill_cat_els:
-        skill_cat_name = skill_cat_el.text
-
-        number_of_skill = get_number_of_skill_in_category(driver, skill_cat_el)
-        skills.append((skill_cat_name, number_of_skill))
+        skills.append(get_category_and_number_of_skill(driver, skill_cat_el))
 
         driver.close()
         while len(driver.window_handles) > 1:
@@ -79,15 +76,16 @@ def get_skill_cats_count(
     return skills
 
 
-def get_number_of_skill_in_category(driver, skill_cat_el):
+def get_category_and_number_of_skill(driver, skill_cat_el):
     """Search for the number of skill in the category.
 
     :param driver: a selenium driver element.
     :param skill_cat_el: a skill category element (link of a category on the
     left column in the skill store home page).
-    :return: the category count.
+    :return: the category name and the number of skill in the category.
     """
     skill_cat_cnt = 0
+    skill_cat_name = skill_cat_el.text
 
     # click on the skill category
     skill_cat_el.send_keys(CONTROL_KEY + Keys.RETURN)
@@ -113,7 +111,7 @@ def get_number_of_skill_in_category(driver, skill_cat_el):
             skill_cat_cnt_str = match_results.groups()[0]
             skill_cat_cnt = int(skill_cat_cnt_str.replace(',', ''))
 
-    return skill_cat_cnt
+    return skill_cat_name, skill_cat_cnt
 
 
 def run(setup_args):
