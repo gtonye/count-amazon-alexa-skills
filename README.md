@@ -4,30 +4,56 @@
 
 > Disclaimer: This is not an Alexa skill
 
-The following repository hosts the codebase for a scrapper that counts the number of Skills available on the skill store.
+The following repository hosts the codebase for a scrapper that counts the number of Skills available on the Amazon Skill Store.
 
 ## Development
 
 #### Requirements
 
 The following are necessary to use the script:
-* Python 2.7
-* Virtualenv
-* [Mozilla firefox Geckodriver](https://github.com/mozilla/geckodriver/releases)
+* Python 3.7
+* [Mozilla firefox Geckodriver](https://github.com/mozilla/geckodriver/releases) (to work locally)
 
 #### Setup
 
+###### Local
 ```
 # set the geckodriver path in the binaries path
-virtualenv .env
+virtualenv -p python3 .env
 source ./env/bin/activate
 pip install -r requirements.txt
+pip install -r dev-requirements.txt
 ```
+
+###### Using container
+
+```make docker-build```
 
 #### Run
 
+###### Local
+
 ```
-python count_amazon_skills.py
+make run
+```
+
+Change the report by setting two environment variables:
+
+```
+BROWSER_TYPE=[headless, in_window]
+REPORT_TYPE=[full, minimal]
+```
+
+Use `in_window` if you want to see the scrapping in an actual window and `headless` for an invisible scrapping.
+A `full` report type print the breakdown of skill number by category. `minimal` only displays the total number of skill.
+
+###### Using container
+
+```make docker-run```
+
+You can also pass an environment file to script by doing:
+```
+make docker-run env-file="path-to-file"
 ```
 
 ## Description
@@ -55,5 +81,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #### F[ea|u]ture
 
 Pull requests are more than welcomed. some of the things that would make this script even better:
-* support other regions where scripts are available
+* support other regions where Skills are available (the present code only supports the US)
 * aggregate the count over the regions
+* add unit tests
