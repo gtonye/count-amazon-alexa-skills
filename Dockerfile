@@ -15,6 +15,6 @@ RUN apt-get update                             \
 COPY requirements.txt ./
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-COPY config.py count_amazon_skills.py Makefile ./
+COPY contants.py count_amazon_skills.py Makefile ./
 
 CMD ["make", "run"]

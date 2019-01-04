@@ -18,16 +18,14 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.firefox.options import Options
 
-from config import (SKILL_STORE_URL, BROWSER_ACTION_WAIT_TIME)
-
-ALEXA_SKILL_SEARCH_XPATH = '//h4[text()="Alexa Skills"'
-LINK_XPATH = '//a[contains(@class, "a-link-normal s-ref-text-link")]'
-SKILL_CAT_XPATH = '//ul[.{}]]{}'.format(
-    ALEXA_SKILL_SEARCH_XPATH,
-    LINK_XPATH
+from contants import (
+    BROWSER_ACTION_WAIT_TIME,
+    RESULT_PATTERN,
+    RESULTS_XPATH,
+    SKILL_CAT_XPATH,
+    SKILL_STORE_URL
 )
-RESULTS_XPATH = '//span[@id="s-result-count"]'
-RESULT_PATTERN = '.*[of|of over]? ([0-9][0-9,.]+) results.*'
+
 
 CONTROL_KEY = Keys.COMMAND if sys.platform == 'darwin' else Keys.CONTROL
 

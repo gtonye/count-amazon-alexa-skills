@@ -11,3 +11,12 @@ SKILL_STORE_URL = '{}{}'.format(
 # errors such as https://stackoverflow.com/questions/27775759
 # /send-keys-control-click-in-selenium-with-python-bindings
 BROWSER_ACTION_WAIT_TIME = 3
+
+ALEXA_SKILL_SEARCH_XPATH = '//h4[text()="Alexa Skills"'
+LINK_XPATH = '//a[contains(@class, "a-link-normal s-ref-text-link")]'
+SKILL_CAT_XPATH = '//ul[.{}]]{}'.format(
+    ALEXA_SKILL_SEARCH_XPATH,
+    LINK_XPATH
+)
+RESULTS_XPATH = '//span[@id="s-result-count"]'
+RESULT_PATTERN = '.*[of|of over]? ([0-9][0-9,.]+) results.*'
